@@ -1,7 +1,7 @@
 @extends('layout')
 
 @section('content')
-<h1>Team & access</h1>
+<div class="section-head"><h1>Team & access</h1><a class="button" href="/suppliers">Onboard suppliers →</a></div>
 <p class="subtitle">Customers self-register. Administrators create staff, supplier, and financier accounts.</p>
 
 <div class="grid">

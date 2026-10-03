@@ -13,4 +13,5 @@ class User extends Authenticatable {
  public function onboardedCustomers(){return $this->hasMany(self::class,'onboarded_by');}
  public function applications(){return $this->hasMany(LoanApplication::class);}
  public function loans(){return $this->hasMany(Loan::class);}
+ public function supplierProfile(){return $this->hasOne(SupplierProfile::class);}
 }
