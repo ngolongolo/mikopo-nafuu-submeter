@@ -1,0 +1,4 @@
+<?php
+namespace Tests\Feature;
+use App\Models\User;use Illuminate\Auth\Notifications\ResetPassword;use Illuminate\Foundation\Testing\RefreshDatabase;use Illuminate\Support\Facades\Hash;use Illuminate\Support\Facades\Notification;use Tests\TestCase;
+class PasswordResetTest extends TestCase {use RefreshDatabase;public function test_user_can_reset_password_from_emailed_link():void{$user=User::create(['name'=>'Reset User','email'=>'reset@example.test','password'=>'old-password-123']);Notification::fake();$this->post('/forgot-password',['email'=>$user->email])->assertSessionHasNoErrors();Notification::assertSentTo($user,ResetPassword::class,function($notification)use($user){$this->post('/reset-password',['token'=>$notification->token,'email'=>$user->email,'password'=>'new-password-123','password_confirmation'=>'new-password-123'])->assertRedirect('/login');return true;});$this->assertTrue(Hash::check('new-password-123',$user->fresh()->password));}}
