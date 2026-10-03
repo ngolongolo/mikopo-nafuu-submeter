@@ -48,7 +48,7 @@
         @csrf
         <label>Name<input name="name" value="{{ old('name') }}" required></label>
         <label>Email<input type="email" name="email" value="{{ old('email') }}" required></label>
-        <label>Temporary password<input type="password" name="password" required></label>
+        <div class="notice">A secure temporary password will be generated and emailed to the user.</div>
         <label>Role
             <select name="role" required>
                 @foreach(['officer', 'supplier', 'financier', 'admin'] as $role)
@@ -64,7 +64,7 @@
                 @endforeach
             </select>
         </label>
-        <div><button type="submit">Create account</button></div>
+        <div><button type="submit">Create account & email credentials</button></div>
     </form>
 </section>
 @endsection
