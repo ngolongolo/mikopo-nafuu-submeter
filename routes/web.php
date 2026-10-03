@@ -1,0 +1,31 @@
+<?php
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\{AuthController,MarketplaceController,AdminController};
+Route::get('/',[MarketplaceController::class,'home']);
+Route::middleware('guest')->group(function(){Route::view('/login','auth',['register'=>false])->name('login');Route::view('/register','auth',['register'=>true]);Route::post('/login',[AuthController::class,'login'])->middleware('throttle:login');Route::get('/login/otp',[AuthController::class,'otp']);Route::post('/login/otp',[AuthController::class,'verifyOtp'])->middleware('throttle:10,1');Route::post('/login/otp/resend',[AuthController::class,'resendOtp'])->middleware('throttle:3,5');Route::post('/register',[AuthController::class,'register'])->middleware('throttle:register');});
+Route::middleware('auth')->group(function(){
+ Route::post('/logout',[AuthController::class,'logout']);
+ Route::get('/dashboard',[MarketplaceController::class,'dashboard']);
+ Route::get('/applications',[MarketplaceController::class,'applications']);
+ Route::get('/applications/{application}',[MarketplaceController::class,'application']);
+ Route::get('/loans',[MarketplaceController::class,'loans']);Route::get('/loans/{loan}',[MarketplaceController::class,'loan']);
+ Route::get('/payments',[MarketplaceController::class,'payments']);Route::get('/payments/{payment}/receipt',[MarketplaceController::class,'receipt']);
+ Route::middleware('role:admin,officer,financier')->group(function(){Route::get('/reports',[MarketplaceController::class,'reports']);Route::get('/reports/portfolio.csv',[MarketplaceController::class,'export']);});
+ Route::middleware('role:customer')->group(function(){Route::get('/apply/{product}',[MarketplaceController::class,'apply']);Route::post('/apply/{product}',[MarketplaceController::class,'submit'])->middleware('throttle:20,1');});
+ Route::middleware('role:admin,financier')->group(function(){Route::post('/applications/{application}/approve',[MarketplaceController::class,'approve']);Route::post('/applications/{application}/reject',[MarketplaceController::class,'reject']);Route::post('/loans/{loan}/disburse',[MarketplaceController::class,'disburse']);});
+ Route::middleware('role:admin,officer,supplier')->group(function(){Route::post('/loans/{loan}/payments',[MarketplaceController::class,'recordPayment']);});
+ Route::middleware('role:admin,supplier')->group(function(){Route::get('/customers',[AdminController::class,'customers']);Route::get('/customers/onboard',[AdminController::class,'onboardCustomer']);Route::get('/customers/{customer}/assign-loan',[AdminController::class,'assignCustomerLoan']);Route::post('/customers',[AdminController::class,'saveCustomer'])->middleware('throttle:20,1');Route::get('/customers/{customer}',[AdminController::class,'customer']);});
+ Route::middleware('role:admin,supplier')->get('/payouts',[AdminController::class,'payouts']);
+ Route::middleware('role:admin,supplier')->get('/disbursements',[AdminController::class,'disbursements']);
+ Route::middleware('role:admin,supplier')->get('/disbursements/{batch}',[AdminController::class,'disbursement']);
+ Route::middleware('role:supplier')->group(function(){Route::get('/applications/{application}/edit',[AdminController::class,'editApplication']);Route::put('/applications/{application}',[AdminController::class,'updateApplication']);Route::post('/loans/{loan}/installation',[MarketplaceController::class,'confirmInstallation']);});
+ Route::middleware('role:admin')->group(function(){
+  Route::post('/payments/{payment}/confirm',[MarketplaceController::class,'confirm']);Route::post('/payments/{payment}/reverse',[MarketplaceController::class,'reverse']);
+  Route::get('/products',[AdminController::class,'products']);Route::post('/products',[AdminController::class,'saveProduct']);Route::get('/products/{product}/edit',[AdminController::class,'editProduct']);Route::put('/products/{product}',[AdminController::class,'saveProduct']);
+  Route::get('/financiers',[AdminController::class,'financiers']);Route::post('/financiers',[AdminController::class,'saveFinancier']);Route::get('/financiers/{financier}/edit',[AdminController::class,'editFinancier']);Route::put('/financiers/{financier}',[AdminController::class,'saveFinancier']);
+  Route::get('/users',[AdminController::class,'users']);Route::post('/users',[AdminController::class,'saveUser']);Route::get('/audit',[AdminController::class,'audit']);
+  Route::put('/customers/{customer}',[AdminController::class,'updateCustomer']);
+  Route::post('/disbursements/batches',[AdminController::class,'createDisbursementBatch']);Route::post('/disbursements/batches/{batch}/pay',[AdminController::class,'payDisbursementBatch']);
+  Route::post('/payouts/book',[AdminController::class,'bookPayouts']);Route::post('/payouts/{payout}/commission',[AdminController::class,'bookPlatformCommission']);
+ });
+});

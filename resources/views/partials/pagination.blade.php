@@ -1,0 +1,1 @@
+<div class="pagination">@if($items->previousPageUrl())<a href="{{ $items->previousPageUrl() }}">← Previous</a>@endif<span>Page {{ $items->currentPage() }} of {{ $items->lastPage() }}</span>@if($items->nextPageUrl())<a href="{{ $items->nextPageUrl() }}">Next →</a>@endif</div>

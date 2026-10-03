@@ -1,0 +1,11 @@
+@extends('layout')
+@section('title','Disbursements')
+@section('content')
+<div class="section-head"><div><div class="eyebrow">SUPPLIER SETTLEMENTS</div><h1>Disbursements</h1><p class="subtitle">Paid disbursement entries for loans supplied by your account.</p></div></div>
+<div class="grid">@foreach($stats as $label=>$value)<article class="card"><small>{{ $label }}</small><div class="stat">{{ number_format($value) }}</div><small>{{ $label==='Paid entries'?'entries':'TZS' }}</small></article>@endforeach</div>
+<form class="panel filters" method="GET"><input name="q" placeholder="Loan, customer, or disbursement reference" value="{{ request('q') }}"><button>Filter</button><a class="button quiet" href="/disbursements">Clear</a></form>
+<section class="panel"><div class="section-head"><div><h2>Disbursement entries</h2><p class="muted">Account information reflects the consolidated payment booked by the administrator.</p></div></div><div class="table-wrap"><table><thead><tr><th>Loan / customer</th><th>Product</th><th>Amount</th><th>Disbursement reference</th><th>Paid to</th><th>Payment date</th><th>Status</th><th aria-label="Action"></th></tr></thead><tbody>
+@forelse($disbursements as $entry)<tr><td><a href="/loans/{{ $entry->loan->public_id }}"><strong>{{ $entry->loan->reference }}</strong></a><br><small>{{ $entry->loan->customer->name }}</small></td><td>{{ ucfirst($entry->loan->terms['category']??'Loan') }}</td><td><strong>{{ number_format($entry->amount) }} TZS</strong></td><td><strong>{{ $entry->batch?->payment_reference ?: '—' }}</strong>@if($entry->batch)<br><small>{{ $entry->batch->reference }}</small>@endif</td><td>@if($entry->batch){{ $entry->batch->account_name }}<br><small>{{ $entry->batch->institution }} · {{ $entry->batch->account_number }}</small>@else<span class="muted">Not available</span>@endif</td><td>{{ $entry->paid_at?->format('d M Y') ?: '—' }}</td><td><span class="badge paid">Paid</span></td><td>@if($entry->batch)<a class="view-icon" href="/disbursements/{{ $entry->batch->public_id }}">@include('partials.icon',['name'=>'view']) <span>View</span></a>@endif</td></tr>
+@empty<tr><td colspan="8" class="empty">No paid disbursement entries found.</td></tr>@endforelse
+</tbody></table></div>@include('partials.pagination',['items'=>$disbursements])</section>
+@endsection

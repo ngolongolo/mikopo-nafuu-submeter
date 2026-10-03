@@ -1,0 +1,1 @@
+.grid>.card{padding:16px 18px;border-radius:11px}.grid>.card .stat{font-size:22px;margin-top:5px}.grid>.card small{font-size:11px}.grid:has(>.card){gap:12px;margin-bottom:20px}@media(max-width:650px){.grid>.card{padding:13px 15px}.grid>.card .stat{font-size:19px}}

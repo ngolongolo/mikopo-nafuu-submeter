@@ -1,0 +1,9 @@
+<?php
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
+use App\Models\{User,Loan};
+use App\Services\LendingService;
+Artisan::command('app:create-admin',function(){ $name=$this->ask('Name');$email=$this->ask('Email');$password=$this->secret('Password (at least 12 characters)');if(!$name||!filter_var($email,FILTER_VALIDATE_EMAIL)||strlen($password??'')<12){$this->error('Valid name, email and a 12-character password are required.');return 1;}if(User::where('email',$email)->exists()){$this->error('Email already exists.');return 1;}User::create(['name'=>$name,'email'=>$email,'password'=>$password,'role'=>'admin']);$this->info('Administrator created.');});
+Artisan::command('app:create-supplier {email=meter.supplier@mikoponafuu.local} {--name=Meter Supplier}',function(){ $email=$this->argument('email');$name=$this->option('name');if(!$name||!filter_var($email,FILTER_VALIDATE_EMAIL)){$this->error('A valid name and email are required.');return 1;}if(User::where('email',$email)->exists()){$this->error('Email already exists.');return 1;}$password=bin2hex(random_bytes(12));User::create(['name'=>$name,'email'=>$email,'password'=>$password,'role'=>'supplier']);$this->info('Meter supplier created.');$this->line('Email: '.$email);$this->line('Temporary password: '.$password);$this->warn('Share this password securely.');return 0;})->purpose('Create a least-privilege meter supplier account');
+Artisan::command('loans:overdue',function(){Loan::whereIn('status',['active','overdue'])->chunkById(100,function($loans){foreach($loans as $l)\Illuminate\Support\Facades\DB::transaction(function()use($l){$locked=Loan::lockForUpdate()->find($l->id);app(LendingService::class)->refresh($locked);});});$this->info('Loan statuses updated.');});
+Schedule::command('loans:overdue')->dailyAt('00:10')->timezone('Africa/Dar_es_Salaam')->withoutOverlapping();
