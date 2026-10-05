@@ -18,7 +18,13 @@ class AdminUserSeeder extends Seeder
 
         User::updateOrCreate(
             ['email' => $email],
-            ['name' => env('ADMIN_SEED_NAME', 'Nicholaus Ngolongolo'), 'password' => $password, 'role' => 'admin']
+            [
+                'name' => env('ADMIN_SEED_NAME', 'Nicholaus Ngolongolo'),
+                'id_type' => env('ADMIN_SEED_ID_TYPE', 'national_id'),
+                'id_number' => env('ADMIN_SEED_ID_NUMBER', 'ADMIN-SEED-001'),
+                'password' => $password,
+                'role' => 'admin',
+            ]
         );
     }
 }

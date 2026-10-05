@@ -1,0 +1,3 @@
+<?php
+use Illuminate\Database\Migrations\Migration;use Illuminate\Database\Schema\Blueprint;use Illuminate\Support\Facades\DB;use Illuminate\Support\Facades\Schema;
+return new class extends Migration {public function up():void{Schema::create('supplier_user',function(Blueprint $t){$t->foreignId('supplier_profile_id')->constrained()->cascadeOnDelete();$t->foreignId('user_id')->unique()->constrained()->cascadeOnDelete();$t->timestamps();$t->primary(['supplier_profile_id','user_id']);});foreach(DB::table('supplier_profiles')->get() as $profile)DB::table('supplier_user')->insertOrIgnore(['supplier_profile_id'=>$profile->id,'user_id'=>$profile->user_id,'created_at'=>now(),'updated_at'=>now()]);}public function down():void{Schema::dropIfExists('supplier_user');}};

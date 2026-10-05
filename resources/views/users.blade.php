@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="section-head"><h1>Team & access</h1><a class="button" href="/suppliers">Onboard suppliers →</a></div>
-<p class="subtitle">Customers self-register. Administrators create staff, supplier, and financier accounts.</p>
+<p class="subtitle">Administrators create internal and financier accounts here. Supplier users are managed from the dedicated Suppliers page.</p>
 
 <div class="grid">
     @foreach($stats as $label => $value)
@@ -24,18 +24,19 @@
 
 <div class="panel table-wrap">
     <table>
-        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Financier</th><th>Created</th></tr></thead>
+        <thead><tr><th>Name</th><th>Email</th><th>ID details</th><th>Role</th><th>Financier</th><th>Created</th></tr></thead>
         <tbody>
         @forelse($users as $user)
             <tr>
                 <td>{{ $user->name }}</td>
                 <td>{{ $user->email }}</td>
+                <td>{{ $user->id_type ? ucwords(str_replace('_', ' ', $user->id_type)) : 'Missing' }}<br><small>{{ $user->id_number ?? '—' }}</small></td>
                 <td><span class="badge">{{ ucfirst($user->role) }}</span></td>
                 <td>{{ $user->financier?->name ?? '—' }}</td>
                 <td>{{ $user->created_at?->format('d M Y') }}</td>
             </tr>
         @empty
-            <tr><td colspan="5">No users match the selected filters.</td></tr>
+            <tr><td colspan="6">No users match the selected filters.</td></tr>
         @endforelse
         </tbody>
     </table>
@@ -48,10 +49,19 @@
         @csrf
         <label>Name<input name="name" value="{{ old('name') }}" required></label>
         <label>Email<input type="email" name="email" value="{{ old('email') }}" required></label>
+        <label>ID type
+            <select name="id_type" required>
+                <option value="">Select ID type</option>
+                @foreach(['national_id' => 'National ID', 'driving_license' => 'Driving License', 'passport' => 'Passport', 'voters_id' => 'Voters ID'] as $value => $label)
+                    <option value="{{ $value }}" @selected(old('id_type') === $value)>{{ $label }}</option>
+                @endforeach
+            </select>
+        </label>
+        <label>ID number<input name="id_number" value="{{ old('id_number') }}" required></label>
         <div class="notice">A secure temporary password will be generated and emailed to the user.</div>
         <label>Role
             <select name="role" required>
-                @foreach(['officer', 'supplier', 'financier', 'admin'] as $role)
+                @foreach(['officer', 'financier', 'admin'] as $role)
                     <option value="{{ $role }}" @selected(old('role') === $role)>{{ ucfirst($role) }}</option>
                 @endforeach
             </select>

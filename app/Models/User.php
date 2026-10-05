@@ -14,4 +14,5 @@ class User extends Authenticatable {
  public function applications(){return $this->hasMany(LoanApplication::class);}
  public function loans(){return $this->hasMany(Loan::class);}
  public function supplierProfile(){return $this->hasOne(SupplierProfile::class);}
+ public function supplierProfiles(){return $this->belongsToMany(SupplierProfile::class,'supplier_user')->withTimestamps();}
 }
