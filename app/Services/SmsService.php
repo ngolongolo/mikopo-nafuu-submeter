@@ -1,5 +1,6 @@
 <?php
 namespace App\Services;
+use App\Support\PhoneNumber;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
@@ -26,13 +27,6 @@ class SmsService
     }
     public function normalizePhoneNumber(string $phoneNumber): string
     {
-        $phone = preg_replace('/\D+/', '', $phoneNumber);
-        if (str_starts_with($phone, '0'))
-            $phone = '255' . substr($phone, 1);
-        elseif (strlen($phone) === 9)
-            $phone = '255' . $phone;
-        if (!preg_match('/^255\d{9}$/', $phone))
-            throw new RuntimeException('A valid Tanzanian phone number is required.');
-        return $phone;
+        return PhoneNumber::normalize($phoneNumber);
     }
 }

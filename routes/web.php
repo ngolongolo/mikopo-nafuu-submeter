@@ -1,8 +1,18 @@
 <?php
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\{AuthController,MarketplaceController,AdminController,SupplierIntegrationController};
+use App\Http\Controllers\{AuthController,MarketplaceController,AdminController,SupplierIntegrationController,SupplierReconciliationController,CustomerLeadController,CustomerPortalController};
 use App\Http\Controllers\PasswordResetController;
-Route::get('/',fn()=>auth()->check()?redirect('/dashboard'):redirect('/login'));
+Route::get('/',[CustomerLeadController::class,'landing']);
+Route::post('/requests',[CustomerLeadController::class,'store'])->middleware('throttle:10,1');
+Route::get('/requests/{lead}',[CustomerLeadController::class,'received']);
+Route::post('/requests/{lead}/confirm',[CustomerLeadController::class,'confirm'])->middleware('throttle:10,1');
+Route::post('/requests/{lead}/resend',[CustomerLeadController::class,'resendConfirmation'])->middleware('throttle:3,5');
+Route::get('/track',[CustomerPortalController::class,'login']);
+Route::post('/track/code',[CustomerPortalController::class,'requestCode'])->middleware('throttle:5,5');
+Route::get('/track/verify',[CustomerPortalController::class,'verifyForm']);
+Route::post('/track/verify',[CustomerPortalController::class,'verify'])->middleware('throttle:10,1');
+Route::get('/track/dashboard',[CustomerPortalController::class,'dashboard']);
+Route::post('/track/logout',[CustomerPortalController::class,'logout']);
 Route::middleware('guest')->group(function(){Route::view('/login','auth')->name('login');Route::post('/login',[AuthController::class,'login'])->middleware('throttle:login');Route::get('/login/otp',[AuthController::class,'otp']);Route::post('/login/otp',[AuthController::class,'verifyOtp'])->middleware('throttle:10,1');Route::post('/login/otp/resend',[AuthController::class,'resendOtp'])->middleware('throttle:3,5');});
 Route::middleware('guest')->group(function(){Route::get('/forgot-password',[PasswordResetController::class,'request'])->name('password.request');Route::post('/forgot-password',[PasswordResetController::class,'email'])->name('password.email')->middleware('throttle:3,5');Route::get('/reset-password/{token}',[PasswordResetController::class,'reset'])->name('password.reset');Route::post('/reset-password',[PasswordResetController::class,'update'])->name('password.update')->middleware('throttle:5,1');});
 Route::middleware('auth')->group(function(){
@@ -21,8 +31,9 @@ Route::middleware('auth')->group(function(){
  Route::middleware('role:admin,supplier')->get('/payouts',[AdminController::class,'payouts']);
  Route::middleware('role:admin,supplier')->get('/disbursements',[AdminController::class,'disbursements']);
  Route::middleware('role:admin,supplier')->get('/disbursements/{batch}',[AdminController::class,'disbursement']);
- Route::middleware('role:supplier')->group(function(){Route::get('/api-integration',[SupplierIntegrationController::class,'documentation']);Route::get('/applications/{application}/edit',[AdminController::class,'editApplication']);Route::put('/applications/{application}',[AdminController::class,'updateApplication']);Route::post('/loans/{loan}/installation',[MarketplaceController::class,'confirmInstallation']);});
+ Route::middleware('role:supplier')->group(function(){Route::get('/customer-leads',[CustomerLeadController::class,'index']);Route::post('/customer-leads/{lead}/accept',[CustomerLeadController::class,'accept']);Route::get('/reconciliations',[SupplierReconciliationController::class,'index']);Route::post('/reconciliations',[SupplierReconciliationController::class,'store']);Route::get('/api-integration',[SupplierIntegrationController::class,'documentation']);Route::get('/applications/{application}/edit',[AdminController::class,'editApplication']);Route::put('/applications/{application}',[AdminController::class,'updateApplication']);Route::post('/loans/{loan}/installation',[MarketplaceController::class,'confirmInstallation']);});
  Route::middleware('role:admin')->group(function(){
+  Route::put('/loans/{loan}/supplier',[MarketplaceController::class,'updateLoanSupplier']);Route::delete('/loans/{loan}',[MarketplaceController::class,'destroyLoan']);
   Route::post('/payments/{payment}/confirm',[MarketplaceController::class,'confirm']);Route::post('/payments/{payment}/reverse',[MarketplaceController::class,'reverse']);
   Route::get('/products',[AdminController::class,'products']);Route::post('/products',[AdminController::class,'saveProduct']);Route::get('/products/{product}/edit',[AdminController::class,'editProduct']);Route::put('/products/{product}',[AdminController::class,'saveProduct']);
   Route::get('/financiers',[AdminController::class,'financiers']);Route::post('/financiers',[AdminController::class,'saveFinancier']);Route::get('/financiers/{financier}/edit',[AdminController::class,'editFinancier']);Route::put('/financiers/{financier}',[AdminController::class,'saveFinancier']);

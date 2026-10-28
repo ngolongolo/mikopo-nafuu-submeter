@@ -1,6 +1,6 @@
 <?php
 namespace App\Services;
-use App\Models\{LoanApplication,Loan,Payment,Installment,Disbursement,Allocation,AuditLog,User,Payout};
+use App\Models\{LoanApplication,Loan,Payment,Installment,Disbursement,Allocation,AuditLog,User,Payout,SupplierProfile};
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -14,8 +14,8 @@ class LendingService {
    $this->require($a->status==='submitted','This application cannot be approved.');
    $this->require($a->financier->active,'Financier is inactive.');
    $this->require($actor->id!==$a->user_id,'You cannot approve your own application.');
-   $submeter=($a->terms['category']??null)==='submeter';$loan=Loan::create(['reference'=>'MN-'.Str::upper(Str::random(10)),'application_id'=>$a->id,'user_id'=>$a->user_id,'financier_id'=>$a->financier_id,'terms'=>$a->terms,'status'=>'active','installation_status'=>$submeter?'pending':'not_required','disbursement_status'=>'pending']);Payout::create(['public_id'=>(string)Str::ulid(),'loan_id'=>$loan->id,'amount'=>$submeter?(int)$a->terms['principal']-(int)$a->terms['finance_charge']:$a->terms['principal'],'status'=>'pending','platform_commission_amount'=>$submeter?(int)$a->terms['finance_charge']:0,'platform_commission_status'=>$submeter?'pending':'not_applicable']);$this->createSchedule($loan,CarbonImmutable::parse($loan->created_at)->startOfDay());$this->attachUpfrontPayment($a,$loan);
-   $a->update(['status'=>'approved','reviewed_by'=>$actor->id]);$this->audit($actor,$automatic?'application.auto_approved':'application.approved',$a);return $loan;});
+   $submeter=($a->terms['category']??null)==='submeter';$supplierProfileId=$this->supplierProfileId($a);$loan=Loan::create(['reference'=>'MN-'.Str::upper(Str::random(10)),'application_id'=>$a->id,'user_id'=>$a->user_id,'financier_id'=>$a->financier_id,'supplier_profile_id'=>$supplierProfileId,'terms'=>$a->terms,'status'=>'active','installation_status'=>$submeter?'pending':'not_required','disbursement_status'=>'pending']);Payout::create(['public_id'=>(string)Str::ulid(),'loan_id'=>$loan->id,'amount'=>$submeter?(int)$a->terms['principal']-(int)$a->terms['finance_charge']:$a->terms['principal'],'status'=>'pending','platform_commission_amount'=>$submeter?(int)$a->terms['finance_charge']:0,'platform_commission_status'=>$submeter?'pending':'not_applicable']);$this->createSchedule($loan,CarbonImmutable::parse($loan->created_at)->startOfDay());$this->attachUpfrontPayment($a,$loan);
+   $a->update(['status'=>'approved','reviewed_by'=>$actor->id,'supplier_profile_id'=>$supplierProfileId]);$this->audit($actor,$automatic?'application.auto_approved':'application.approved',$a);return $loan;});
  }
  public function confirmInstallation(Loan $loan,User $actor,array $data):void {
   Visibility::check($loan,$actor);$this->require($actor->role==='supplier','Only the responsible supplier can confirm installation.');
@@ -38,6 +38,7 @@ class LendingService {
    $l->update(['disbursement_status'=>'paid','disbursed_at'=>$date,'device_serial'=>$data['device_serial']??$l->device_serial]);$l->payout()->update(['status'=>'paid','disbursement_batch_id'=>$data['disbursement_batch_id']??null,'paid_at'=>$date]);$this->refresh($l);$this->audit($actor,'loan.disbursed',$l);
   });
  }
+ private function supplierProfileId(LoanApplication $application):?int {if($application->supplier_profile_id)return (int)$application->supplier_profile_id;$onboardedBy=$application->customer()->value('onboarded_by');if(!$onboardedBy)return null;return SupplierProfile::whereHas('users',fn($users)=>$users->whereKey($onboardedBy))->orWhere('user_id',$onboardedBy)->value('id');}
  private function createSchedule(Loan $loan,CarbonImmutable $start):void {$t=$loan->terms;$n=(int)$t['installments'];for($i=1;$i<=$n;$i++)Installment::firstOrCreate(['loan_id'=>$loan->id,'number'=>$i],['due_date'=>$start->addMonthsNoOverflow($i)->toDateString(),'principal'=>intdiv((int)$t['principal'],$n)+($i===$n?(int)$t['principal']%$n:0),'charge'=>intdiv((int)$t['finance_charge'],$n)+($i===$n?(int)$t['finance_charge']%$n:0)]);}
  private function attachUpfrontPayment(LoanApplication $application,Loan $loan):void {$upfront=$application->upfrontPayment;if(!$upfront)return;$payment=Payment::firstOrCreate(['reference'=>$upfront->reference],['loan_id'=>$loan->id,'purpose'=>'upfront','amount'=>$upfront->amount,'channel'=>$upfront->channel,'status'=>'pending','evidence'=>$upfront->evidence,'recorded_by'=>$upfront->recorded_by,'paid_at'=>$upfront->paid_at]);if($payment->status!=='pending'||$payment->channel==='cash')return;$received=(int)$loan->payments()->whereKeyNot($payment->id)->where('purpose','upfront')->where('status','confirmed')->sum('amount');$down=min($payment->amount,max(0,(int)$loan->terms['down_payment']-$received));if($down)$this->allocate($payment,null,'down_payment',$down);if($payment->amount>$down)$this->allocate($payment,null,'platform_commission',$payment->amount-$down);$payment->update(['status'=>'confirmed','confirmed_by'=>$upfront->recorded_by,'confirmed_at'=>now()]);$this->audit(User::findOrFail($upfront->recorded_by),'payment.auto_verified',$payment);}
  public function confirm(Payment $payment,User $actor):void {

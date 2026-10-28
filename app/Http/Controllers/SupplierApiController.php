@@ -81,7 +81,7 @@ class SupplierApiController
         }
 
         $actor = $supplier->user;
-        [$customer, $application] = DB::transaction(function () use ($actor, $validated, $product, $financier, $terms, $submeter) {
+        [$customer, $application] = DB::transaction(function () use ($supplier, $actor, $validated, $product, $financier, $terms, $submeter) {
             $name = trim(implode(' ', array_filter([$validated['first_name'], $validated['middle_name'] ?? null, $validated['last_name']])));
             $customer = User::create([
                 'name' => $name,
@@ -111,6 +111,7 @@ class SupplierApiController
                 'user_id' => $customer->id,
                 'product_id' => $product->id,
                 'financier_id' => $financier->id,
+                'supplier_profile_id' => $supplier->id,
                 'phone' => $validated['phone_number'],
                 'id_type' => $validated['id_type'],
                 'id_number' => $validated['id_number'],
@@ -269,10 +270,17 @@ class SupplierApiController
 
     private function loanQuery(Request $request, ?string $meterNumber, ?string $phoneNumber)
     {
-        $supplierUserIds = $this->supplier($request)->users()->pluck('users.id')->push($this->supplier($request)->user_id)->unique();
+        $supplier = $this->supplier($request);
+        $supplierUserIds = $supplier->users()->pluck('users.id')->push($supplier->user_id)->unique();
 
         return Loan::query()
-            ->whereHas('customer', fn ($query) => $query->whereIn('onboarded_by', $supplierUserIds))
+            ->where(function ($query) use ($supplier, $supplierUserIds) {
+                $query->where('supplier_profile_id', $supplier->id)
+                    ->orWhere(function ($legacy) use ($supplierUserIds) {
+                        $legacy->whereNull('supplier_profile_id')
+                            ->whereHas('customer', fn ($customer) => $customer->whereIn('onboarded_by', $supplierUserIds));
+                    });
+            })
             ->when($meterNumber, fn ($query) => $query->whereHas('application', fn ($application) => $application->where('meter_number', $meterNumber)))
             ->when($phoneNumber, fn ($query) => $query->whereHas('customer', fn ($customer) => $customer->where('phone', $phoneNumber)));
     }
