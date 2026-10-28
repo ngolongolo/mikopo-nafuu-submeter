@@ -1,10 +1,12 @@
 (() => {
+    const scriptUrl = document.currentScript?.src || document.baseURI;
+    const publicUrl = path => new URL(path, scriptUrl).toString();
     const installButton = document.getElementById('pwa-install');
     const iosDialog = document.getElementById('pwa-ios-help');
     let installPrompt = null;
 
     if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js').catch(() => {}));
+        window.addEventListener('load', () => navigator.serviceWorker.register(publicUrl('service-worker.js?v=3')).catch(() => {}));
     }
 
     const installed = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;

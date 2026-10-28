@@ -1,31 +1,16 @@
-const CACHE_NAME = 'mikopo-nafuu-static-v2';
-const OFFLINE_URL = '/offline.html';
+const CACHE_NAME = 'mikopo-nafuu-static-v3';
+const scopedUrl = path => new URL(path, self.registration.scope).toString();
+const OFFLINE_URL = scopedUrl('offline.html');
 const STATIC_ASSETS = [
     OFFLINE_URL,
-    '/manifest.webmanifest',
-    '/app.css',
-    '/loading.css',
-    '/auth.css',
-    '/icons.css',
-    '/wizard.css',
-    '/onboarding.css',
-    '/loan.css',
-    '/disbursements.css',
-    '/payouts.css',
-    '/repayment.css',
-    '/upfront.css',
-    '/summary-cards.css',
-    '/summary-cards.js',
-    '/customer-profile.css',
-    '/api-docs.css',
-    '/customer-leads.css',
-    '/customer-portal.css',
-    '/pwa.css',
-    '/loading.js',
-    '/pwa.js',
-    '/pwa/icon-192.png',
-    '/pwa/icon-512.png',
-    '/pwa/icon-maskable-512.png'
+    ...[
+        'manifest.webmanifest', 'app.css', 'loading.css', 'auth.css', 'icons.css',
+        'wizard.css', 'onboarding.css', 'loan.css', 'disbursements.css', 'payouts.css',
+        'repayment.css', 'upfront.css', 'summary-cards.css', 'summary-cards.js',
+        'customer-profile.css', 'api-docs.css', 'customer-leads.css', 'customer-portal.css',
+        'pwa.css', 'loading.js', 'pwa.js', 'favicon.svg', 'pwa/icon-192.png',
+        'pwa/icon-512.png', 'pwa/icon-maskable-512.png'
+    ].map(scopedUrl)
 ];
 
 self.addEventListener('install', event => {
@@ -55,12 +40,9 @@ self.addEventListener('fetch', event => {
 
     if (!/\.(?:css|js|png|svg|webmanifest)$/.test(url.pathname)) return;
     event.respondWith(
-        caches.match(request).then(cached => {
-            const refreshed = fetch(request).then(response => {
-                if (response.ok) caches.open(CACHE_NAME).then(cache => cache.put(request, response.clone()));
-                return response;
-            }).catch(() => cached);
-            return cached || refreshed;
-        })
+        fetch(request).then(response => {
+            if (response.ok) caches.open(CACHE_NAME).then(cache => cache.put(request, response.clone()));
+            return response;
+        }).catch(() => caches.match(request))
     );
 });
