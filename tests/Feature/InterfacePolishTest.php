@@ -37,4 +37,26 @@ class InterfacePolishTest extends TestCase
         $this->assertSame('255744000100', PhoneNumber::normalize('+255 744 000 100'));
         $this->assertSame('255744000100', PhoneNumber::normalize('255744000100'));
     }
+
+    public function test_operational_lists_start_with_a_date_column(): void
+    {
+        foreach ([
+            'applications.blade.php',
+            'customer-list.blade.php',
+            'financiers.blade.php',
+            'products.blade.php',
+            'supplier-disbursement.blade.php',
+            'supplier-disbursements.blade.php',
+            'suppliers.blade.php',
+            'users.blade.php',
+            'partials/loan-table.blade.php',
+            'partials/payment-table.blade.php',
+        ] as $view) {
+            $markup = file_get_contents(resource_path('views/'.$view));
+            $this->assertMatchesRegularExpression('/<thead>\s*<tr>\s*<th[^>]*>Date<\/th>/s', $markup, $view);
+        }
+
+        $controller = file_get_contents(app_path('Http/Controllers/MarketplaceController.php'));
+        $this->assertStringContainsString("latest('paid_at')->latest('id')", $controller);
+    }
 }

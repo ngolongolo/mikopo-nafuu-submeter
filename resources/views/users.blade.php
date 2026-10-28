@@ -24,16 +24,16 @@
 
 <div class="panel table-wrap">
     <table>
-        <thead><tr><th>Name</th><th>Email</th><th>ID details</th><th>Role</th><th>Financier</th><th>Created</th></tr></thead>
+        <thead><tr><th>Date</th><th>Name</th><th>Email</th><th>ID details</th><th>Role</th><th>Financier</th></tr></thead>
         <tbody>
         @forelse($users as $user)
             <tr>
+                <td>{{ $user->created_at?->format('d M Y') }}<br><small>{{ $user->created_at?->format('H:i') }}</small></td>
                 <td>{{ $user->name }}</td>
                 <td>{{ $user->email }}</td>
                 <td>{{ $user->id_type ? ucwords(str_replace('_', ' ', $user->id_type)) : 'Missing' }}<br><small>{{ $user->id_number ?? '—' }}</small></td>
                 <td><span class="badge">{{ ucfirst($user->role) }}</span></td>
                 <td>{{ $user->financier?->name ?? '—' }}</td>
-                <td>{{ $user->created_at?->format('d M Y') }}</td>
             </tr>
         @empty
             <tr><td colspan="6">No users match the selected filters.</td></tr>

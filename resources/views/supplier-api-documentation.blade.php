@@ -8,7 +8,7 @@
  <div class="notice">Treat the API secret like a password. Never place it in browser code, URLs, screenshots, or public repositories.</div>
  @forelse($credentials as $credential)
   <article class="credential-card">
-   <div class="credential-title"><div><strong>{{ $credential->name }}</strong><small>Created {{ $credential->created_at->format('d M Y') }} · Last used {{ $credential->last_used_at?->format('d M Y H:i') ?? 'never' }}</small></div><span class="badge active">Active</span></div>
+   <div class="credential-title"><div><small>{{ $credential->created_at->format('d M Y H:i') }}</small><strong>{{ $credential->name }}</strong><small>Last used {{ $credential->last_used_at?->format('d M Y H:i') ?? 'never' }}</small></div><span class="badge active">Active</span></div>
    <div class="credential-fields">
     <div><label>Fixed API key</label><div class="copy-field"><code id="api-key-{{ $credential->id }}">{{ $credential->key_id }}</code><button type="button" class="button secondary copy-button" data-copy="api-key-{{ $credential->id }}">Copy</button></div></div>
     <div><label>API secret</label><div class="copy-field"><code id="api-secret-{{ $credential->id }}">{{ $credential->plain_secret ?: 'Secret unavailable — ask an administrator to create new credentials.' }}</code>@if($credential->plain_secret)<button type="button" class="button secondary copy-button" data-copy="api-secret-{{ $credential->id }}">Copy</button>@endif</div></div>

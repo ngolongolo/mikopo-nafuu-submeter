@@ -22,6 +22,7 @@
             <div class="lead-queue-amount"><small>Requested</small><strong>{{ number_format($lead->financing_amount) }} TZS</strong>@if($lead->request_type==='submeter')<span>{{ $lead->meter_quantity }} meter{{ $lead->meter_quantity===1?'':'s' }}</span>@endif</div>
         </div>
         <div class="lead-queue-details">
+            <div><small>Date</small><strong>{{ $lead->created_at->format('d M Y') }}</strong><span>{{ $lead->created_at->format('H:i') }}</span></div>
             <div><small>Product</small><strong>{{ $lead->product->name }}</strong><span>{{ ucfirst($lead->product->category) }}</span></div>
             <div><small>Contact</small><strong>{{ $lead->phone }}</strong><span>{{ $lead->email ?: 'No email supplied' }}</span></div>
             @if($lead->request_type==='token')<div><small>Meter to verify</small><strong>{{ $lead->meter_number }}</strong><span>Check existence and eligibility in your meter database</span></div>@else<div><small>Location</small><strong>{{ $lead->ward }}, {{ $lead->district }}</strong><span>{{ $lead->region }} · {{ $lead->address }}</span></div>@endif

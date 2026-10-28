@@ -35,5 +35,5 @@
  @endforeach
  </tbody></table></div>
 </section>
-<section class="panel"><h2>Applications</h2><div class="table-wrap"><table><thead><tr><th>Reference</th><th>Product</th><th>Status</th><th>Date</th></tr></thead><tbody>@forelse($customer->applications as $application)<tr><td><a href="/applications/{{ $application->public_id }}">{{ $application->reference }}</a></td><td>{{ $application->product->name }}</td><td><span class="badge {{ $application->status }}">{{ ucfirst($application->status) }}</span></td><td>{{ $application->created_at->format('d M Y') }}</td></tr>@empty<tr><td colspan="4">No applications yet.</td></tr>@endforelse</tbody></table></div></section>
+<section class="panel"><h2>Applications</h2><div class="table-wrap"><table><thead><tr><th>Date</th><th>Reference</th><th>Product</th><th>Status</th></tr></thead><tbody>@forelse($customer->applications as $application)<tr><td>{{ $application->created_at->format('d M Y') }}<br><small>{{ $application->created_at->format('H:i') }}</small></td><td><a href="/applications/{{ $application->public_id }}">{{ $application->reference }}</a></td><td>{{ $application->product->name }}</td><td><span class="badge {{ $application->status }}">{{ ucfirst($application->status) }}</span></td></tr>@empty<tr><td colspan="4">No applications yet.</td></tr>@endforelse</tbody></table></div></section>
 @endsection
