@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\{Financier, Installment, Loan, LoanApplication, Product, SupplierApiToken, SupplierProfile, User};
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class SupplierApiTest extends TestCase
@@ -35,6 +36,10 @@ class SupplierApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.reference', 'MN-API-001')
             ->assertJsonPath('data.outstanding_amount', 6000);
+
+        // Existing production records may predate phone normalization.
+        DB::table('users')->where('id', $customer->id)->update(['phone' => '0700000002']);
+        DB::table('applications')->where('id', $application->id)->update(['phone' => '+255700000002']);
 
         $this->postJson('/api/v1/supplier/repayments', [
             'amount_purchased' => 10000,

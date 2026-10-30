@@ -59,4 +59,12 @@ class InterfacePolishTest extends TestCase
         $controller = file_get_contents(app_path('Http/Controllers/MarketplaceController.php'));
         $this->assertStringContainsString("latest('paid_at')->latest('id')", $controller);
     }
+
+    public function test_approved_financing_summary_includes_upfront_payment(): void
+    {
+        $view = file_get_contents(resource_path('views/loan.blade.php'));
+
+        $this->assertStringContainsString('Upfront payment', $view);
+        $this->assertStringContainsString("\$loan->terms['upfront']", $view);
+    }
 }

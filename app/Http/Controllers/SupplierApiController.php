@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\{ApplicationUpfrontPayment, AuditLog, Loan, LoanApplication, Payment, Product, SupplierProfile, User};
 use App\Services\LendingService;
+use App\Support\PhoneNumber;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -272,6 +273,8 @@ class SupplierApiController
     {
         $supplier = $this->supplier($request);
         $supplierUserIds = $supplier->users()->pluck('users.id')->push($supplier->user_id)->unique();
+        $meterNumber = $meterNumber !== null ? trim($meterNumber) : null;
+        $phoneNumbers = $this->phoneNumberCandidates($phoneNumber);
 
         return Loan::query()
             ->where(function ($query) use ($supplier, $supplierUserIds) {
@@ -282,7 +285,37 @@ class SupplierApiController
                     });
             })
             ->when($meterNumber, fn ($query) => $query->whereHas('application', fn ($application) => $application->where('meter_number', $meterNumber)))
-            ->when($phoneNumber, fn ($query) => $query->whereHas('customer', fn ($customer) => $customer->where('phone', $phoneNumber)));
+            ->when($phoneNumbers, function ($query) use ($phoneNumbers) {
+                $query->where(function ($phoneQuery) use ($phoneNumbers) {
+                    $phoneQuery
+                        ->whereHas('customer', fn ($customer) => $customer->whereIn('phone', $phoneNumbers))
+                        ->orWhereHas('application', fn ($application) => $application->whereIn('phone', $phoneNumbers));
+                });
+            });
+    }
+
+    private function phoneNumberCandidates(?string $phoneNumber): array
+    {
+        if ($phoneNumber === null || trim($phoneNumber) === '') {
+            return [];
+        }
+
+        $raw = trim($phoneNumber);
+        $sanitized = PhoneNumber::sanitize($raw);
+        $digits = preg_replace('/\D+/', '', (string) $sanitized);
+        $candidates = [$raw, $sanitized, $digits];
+
+        if (preg_match('/^255\d{9}$/', $digits)) {
+            $nationalNumber = substr($digits, 3);
+            $candidates[] = '0'.$nationalNumber;
+            $candidates[] = '+'.$digits;
+            $candidates[] = $nationalNumber;
+        }
+
+        return array_values(array_unique(array_filter(
+            $candidates,
+            fn ($candidate) => is_string($candidate) && $candidate !== ''
+        )));
     }
 
     private function supplier(Request $request): SupplierProfile
