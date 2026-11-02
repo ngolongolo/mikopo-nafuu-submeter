@@ -2,6 +2,7 @@
 namespace App\Http\Controllers;
 use App\Models\{Product,Financier,User,SupplierProfile,AuditLog,LoanApplication,Loan,Disbursement,DisbursementBatch,DisbursementBatchItem,ApplicationUpfrontPayment,Payout,CustomerLead};
 use App\Services\LendingService;
+use App\Services\EmailSmsFallback;
 use App\Services\Visibility;
 use App\Mail\NewAccountCredentialsMail;
 use Illuminate\Http\Request;

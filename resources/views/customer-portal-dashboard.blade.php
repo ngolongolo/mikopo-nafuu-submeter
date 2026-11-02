@@ -1,5 +1,6 @@
 @extends('layout')
 @section('title','Customer tracker')
+@section('body-class','customer-portal-page')
 @section('content')
 @php
     $loans = $applications->pluck('loan')->filter();
@@ -10,15 +11,15 @@
 @endphp
 <section class="portal-dashboard">
     <div class="portal-dashboard-head">
-        <div><span class="lead-kicker">CUSTOMER TRACKER</span><h1>{{ $customer?->name ?: ($leads->first()?->first_name ?: 'Customer') }}, welcome back</h1><p>Verified mobile {{ $maskedPhone }} · Updated {{ now()->format('d M Y, H:i') }}</p></div>
-        <form method="POST" action="/track/logout">@csrf<button class="quiet">Securely sign out</button></form>
+        <div class="portal-dashboard-copy"><span class="lead-kicker">CUSTOMER TRACKER</span><h1>{{ $customer?->name ?: ($leads->first()?->first_name ?: 'Customer') }}, welcome back</h1><p><span>Verified mobile {{ $maskedPhone }}</span><span>Updated {{ now()->format('d M Y, H:i') }}</span></p></div>
+        <form method="POST" action="/track/logout">@csrf<button class="quiet portal-signout">Sign out securely</button></form>
     </div>
 
     <div class="portal-stat-grid">
-        <article><small>Applications</small><strong>{{ $leads->count() ?: $applications->count() }}</strong><span>submitted requests</span></article>
-        <article><small>Active loans</small><strong>{{ $activeLoans->count() }}</strong><span>current facilities</span></article>
-        <article><small>Outstanding</small><strong>{{ number_format($outstanding) }}</strong><span>TZS remaining</span></article>
-        <article><small>Repayments confirmed</small><strong>{{ number_format($confirmedRepayments) }}</strong><span>TZS received</span></article>
+        <article><span class="portal-stat-icon">@include('partials.icon',['name'=>'applications'])</span><div><small>Applications</small><strong>{{ $leads->count() ?: $applications->count() }}</strong><span>submitted requests</span></div></article>
+        <article><span class="portal-stat-icon">@include('partials.icon',['name'=>'loans'])</span><div><small>Active loans</small><strong>{{ $activeLoans->count() }}</strong><span>current facilities</span></div></article>
+        <article><span class="portal-stat-icon">@include('partials.icon',['name'=>'reports'])</span><div><small>Outstanding</small><strong>{{ number_format($outstanding) }}</strong><span>TZS remaining</span></div></article>
+        <article><span class="portal-stat-icon">@include('partials.icon',['name'=>'payments'])</span><div><small>Repayments</small><strong>{{ number_format($confirmedRepayments) }}</strong><span>TZS confirmed</span></div></article>
     </div>
 
     <section class="portal-section">
@@ -56,8 +57,18 @@
             @php($nextInstallment=$loan->installments->first(fn($installment)=>$installment->outstanding()>0))
             <div class="portal-loan-summary"><div><small>Total repayable</small><strong>{{ number_format($loan->terms['repayment_total']) }} TZS</strong></div><div><small>Next payment</small><strong>{{ $nextInstallment?number_format($nextInstallment->outstanding()).' TZS':'Fully paid' }}</strong><span>{{ $nextInstallment?'Due '.$nextInstallment->due_date->format('d M Y'):'No payment due' }}</span></div><div><small>Payment progress</small><strong>{{ number_format($loan->terms['repayment_total']-$loan->outstanding()) }} TZS</strong><span>allocated to the schedule</span></div></div>
 
-            <details class="portal-details" open><summary>Repayment schedule</summary><div class="table-wrap"><table><thead><tr><th>Due date</th><th>Instalment</th><th>Amount</th><th>Paid</th><th>Balance</th><th>Status</th></tr></thead><tbody>@foreach($loan->installments as $installment)<tr><td>{{ $installment->due_date->format('d M Y') }}</td><td>#{{ $installment->number }}</td><td>{{ number_format($installment->principal+$installment->charge) }}</td><td>{{ number_format($installment->paid_principal+$installment->paid_charge) }}</td><td>{{ number_format($installment->outstanding()) }}</td><td><span class="badge {{ $installment->status }}">{{ ucfirst($installment->status) }}</span></td></tr>@endforeach</tbody></table></div></details>
-            <details class="portal-details"><summary>Payment history ({{ $loan->payments->count() }})</summary><div class="table-wrap"><table><thead><tr><th>Date</th><th>Receipt</th><th>Purpose</th><th>Channel</th><th>Amount</th><th>Status</th></tr></thead><tbody>@forelse($loan->payments->sortByDesc('paid_at') as $payment)<tr><td>{{ $payment->paid_at->format('d M Y') }}</td><td>{{ $payment->reference }}</td><td>{{ ucfirst($payment->purpose) }}</td><td>{{ str_replace('_',' ',ucfirst($payment->channel)) }}</td><td>{{ number_format($payment->amount) }} TZS</td><td><span class="badge {{ $payment->status }}">{{ ucfirst($payment->status) }}</span></td></tr>@empty<tr><td colspan="6" class="empty">No payments have been recorded.</td></tr>@endforelse</tbody></table></div></details>
+            <details class="portal-details" open>
+                <summary>Repayment schedule</summary>
+                <div class="table-wrap"><table class="portal-data-table"><thead><tr><th>Due date</th><th>Instalment</th><th>Amount</th><th>Paid</th><th>Balance</th><th>Status</th></tr></thead><tbody>
+                    @foreach($loan->installments as $installment)<tr><td data-label="Due date">{{ $installment->due_date->format('d M Y') }}</td><td data-label="Instalment">#{{ $installment->number }}</td><td data-label="Amount">{{ number_format($installment->principal+$installment->charge) }} TZS</td><td data-label="Paid">{{ number_format($installment->paid_principal+$installment->paid_charge) }} TZS</td><td data-label="Balance">{{ number_format($installment->outstanding()) }} TZS</td><td data-label="Status"><span class="badge {{ $installment->status }}">{{ ucfirst($installment->status) }}</span></td></tr>@endforeach
+                </tbody></table></div>
+            </details>
+            <details class="portal-details">
+                <summary>Payment history <span>({{ $loan->payments->count() }})</span></summary>
+                <div class="table-wrap"><table class="portal-data-table"><thead><tr><th>Date</th><th>Receipt</th><th>Purpose</th><th>Channel</th><th>Amount</th><th>Status</th></tr></thead><tbody>
+                    @forelse($loan->payments->sortByDesc('paid_at') as $payment)<tr><td data-label="Date">{{ $payment->paid_at->format('d M Y') }}</td><td data-label="Receipt">{{ $payment->reference }}</td><td data-label="Purpose">{{ ucfirst($payment->purpose) }}</td><td data-label="Channel">{{ str_replace('_',' ',ucfirst($payment->channel)) }}</td><td data-label="Amount">{{ number_format($payment->amount) }} TZS</td><td data-label="Status"><span class="badge {{ $payment->status }}">{{ ucfirst($payment->status) }}</span></td></tr>@empty<tr><td colspan="6" class="empty">No payments have been recorded.</td></tr>@endforelse
+                </tbody></table></div>
+            </details>
             @else
             <div class="portal-pending-note">Your application is {{ $application->status }}. Loan and repayment information will appear here after approval.</div>
             @endif
